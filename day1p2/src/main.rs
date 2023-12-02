@@ -3,7 +3,7 @@ use std::fs;
 fn main() {
     println!("Day 1 Puzzle 1");
     let data = read_file();
-    let result = decode(data.clone());
+    let result = decode(data);
     let mut sum = 0;
     for current in result.iter() {
         sum += current;
