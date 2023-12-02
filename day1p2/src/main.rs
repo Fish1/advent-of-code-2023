@@ -20,17 +20,16 @@ fn decode(array: Vec<String>) -> Vec<u32> {
             match character.to_digit(10) {
                 Some(number) => {
                     left_number = Some(number);
+                    break;
                 }
                 _ => {
                     left_word.push(character);
                     let word_number = get_number_from_word(&left_word);
                     if let Some(number) = word_number {
                         left_number = Some(number);
+                        break;
                     }
                 }
-            }
-            if let Some(_) = left_number {
-                break;
             }
         }
 
@@ -40,17 +39,16 @@ fn decode(array: Vec<String>) -> Vec<u32> {
             match character.to_digit(10) {
                 Some(number) => {
                     right_number = Some(number);
+                    break;
                 }
                 _ => {
                     right_word.insert(0, character);
                     let word_number = get_number_from_word(&right_word);
                     if let Some(number) = word_number {
                         right_number = Some(number);
+                        break;
                     }
                 }
-            }
-            if let Some(_) = right_number {
-                break;
             }
         }
 
