@@ -3,12 +3,12 @@ use std::fs;
 fn main() {
     println!("Day 1 Puzzle 1");
     let data = read_file();
-    let result = decode(data);
-    let mut sum = 0;
-    for current in result.iter() {
-        sum += current;
+    let decoded_data = decode(data);
+    let mut result = 0;
+    for current in decoded_data {
+        result += current;
     }
-    println!("{sum}");
+    println!("{result}");
 }
 
 fn decode(array: Vec<String>) -> Vec<u32> {
@@ -87,7 +87,8 @@ fn read_file() -> Vec<String> {
     fs::read_to_string("./input/day1p1.txt")
         .unwrap()
         .lines()
-        .map(|x| String::from(x))
+        .map(String::from)
+        // ignore blank lines
         .filter(|x| x.len() > 0)
         .collect()
 }
@@ -105,7 +106,6 @@ fn example() {
         "2twoneh".to_string(),
     ];
     println!("{:?}", test);
-
     let result = decode(test);
     println!("{:?}", result);
     assert!(result[0] == 29);
