@@ -2,5 +2,6 @@
 members = [
 	"day1p1",
 	"day1p2",
-	"day2p1p2"
+	"day2p1p2",
+	"day3p1p2",
 ]
