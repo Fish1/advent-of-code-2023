@@ -113,26 +113,28 @@ impl Game {
             if jack_count == 2 || jack_count == 3 {
                 return GameType::FourOfAKind;
             }
-            for card in hand {
-                if card.1 == 3 {
-                    if jack_count == 1 {
-                        return GameType::FourOfAKind;
-                    } else {
-                        return GameType::ThreeOfAKind;
-                    }
+            let mut hand_iter = hand.iter();
+            let first = *hand_iter.next().unwrap().1;
+            let second = *hand_iter.next().unwrap().1;
+            if first == 2 || second == 2 {
+                if jack_count == 1 {
+                    GameType::FullHouse
+                } else {
+                    GameType::TwoPair
                 }
-            }
-            if jack_count == 1 {
-                return GameType::FullHouse;
             } else {
-                return GameType::TwoPair;
+                if jack_count == 1 {
+                    GameType::FourOfAKind
+                } else {
+                    GameType::ThreeOfAKind
+                }
             }
         } else if hand.len() == 2 {
             if jack_count > 0 {
                 return GameType::FiveOfAKind;
             }
-            let first_card = *hand.iter().next().unwrap().1;
-            if first_card == 4 || first_card == 1 {
+            let first = *hand.iter().next().unwrap().1;
+            if first == 4 || first == 1 {
                 GameType::FourOfAKind
             } else {
                 GameType::FullHouse
@@ -144,21 +146,10 @@ impl Game {
 }
 
 fn get_card_rank_jack(card: char) -> Result<i64, String> {
-    match card {
-        'J' => Ok(0),
-        '2' => Ok(1),
-        '3' => Ok(2),
-        '4' => Ok(3),
-        '5' => Ok(4),
-        '6' => Ok(5),
-        '7' => Ok(6),
-        '8' => Ok(7),
-        '9' => Ok(8),
-        'T' => Ok(9),
-        'Q' => Ok(11),
-        'K' => Ok(12),
-        'A' => Ok(13),
-        _ => Err(String::from("not a valid card")),
+    if card == 'J' {
+        Ok(0)
+    } else {
+        get_card_rank(card)
     }
 }
 
