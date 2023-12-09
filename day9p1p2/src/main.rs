@@ -71,14 +71,7 @@ fn test() {
 
     let next_sum = Series::list(text).iter().map(|s| s.next()).sum::<i64>();
     assert!(next_sum == 114);
-    let prev_sum = Series::list(text)
-        .iter()
-        .map(|s| {
-            let p = s.prev();
-            println!("p = {}", p);
-            return p;
-        })
-        .sum::<i64>();
+    let prev_sum = Series::list(text).iter().map(|s| s.prev()).sum::<i64>();
     println!("prev_sum = {}", prev_sum);
     assert!(prev_sum == 2);
 }
