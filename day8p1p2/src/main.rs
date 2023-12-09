@@ -24,7 +24,6 @@ impl Map {
         let lines = text.lines();
         let mut routes = HashMap::new();
         let mut instructions = String::new();
-        let mut first_location = String::new();
         for line in lines.enumerate() {
             let line_number = line.0;
             if line_number == 0 {
@@ -44,14 +43,11 @@ impl Map {
                 let left = split.next().unwrap().to_string();
                 let right = split.next().unwrap().to_string();
                 routes.insert(from.clone(), (left, right));
-                if line_number == 2 {
-                    first_location = from;
-                }
             }
         }
         Map {
             step: 0,
-            location: first_location.to_string(),
+            location: String::from("AAA"),
             instructions: instructions.to_string(),
             routes,
         }
@@ -63,7 +59,7 @@ impl Map {
         let next_location = self.routes.get(&self.location).unwrap();
         if direction == b'L' {
             self.location = next_location.0.clone();
-        } else if direction == b'R' {
+        } else {
             self.location = next_location.1.clone();
         }
     }
