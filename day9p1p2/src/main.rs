@@ -1,7 +1,7 @@
 use std::fs;
 
 fn main() {
-    println!("Hello, world!");
+    println!("Day 9 Puzzels 1 & 2");
     let text = read_file("./input/day9p1.txt");
     let next_sum = Series::list(&text).iter().map(|s| s.next()).sum::<i64>();
     println!("next sum = {}", next_sum);
