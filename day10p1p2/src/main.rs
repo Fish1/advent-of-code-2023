@@ -8,7 +8,8 @@ fn main() {
 }
 
 fn readfile(filename: &str) -> String {
-    fs::read_to_string(filename).unwrap()
+    let x = fs::read_to_string(filename).unwrap();
+    return x;
 }
 
 struct Map<'a> {
