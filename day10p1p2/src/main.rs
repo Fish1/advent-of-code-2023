@@ -1,234 +1,258 @@
 use std::fs;
 
 fn main() {
-    let data = readfile("./input/day10p1.txt").replace("\n", "");
-    let mut map = Map::new(&data, (140, 140));
-    let steps = map.step_to_end();
-    println!("steps = {}", steps);
-}
+    println!("Hello World!");
 
-fn readfile(filename: &str) -> String {
-    let x = fs::read_to_string(filename).unwrap();
-    return x;
-}
+    let input = read_file("./input/day10p1.txt");
+    let map = Map::new(&input);
 
-struct Map<'a> {
-    step: i64,
-    // original_string: String,
-    data: &'a [u8],
-    size: (i64, i64),
-    starting_coord: (i64, i64),
-    previous_coords: ((i64, i64), (i64, i64)),
-    current_coords: ((i64, i64), (i64, i64)),
-}
+    let starting_coord = map.get_starting_coord().unwrap();
+    let starting_directions = map.get_valid_directions(starting_coord);
 
-impl Map<'_> {
-    fn new(original_string: &String, size: (i64, i64)) -> Map {
-        let starting_index = original_string.find(|e| e == 'S').unwrap() as i64;
-        let starting_x = starting_index % size.0;
-        let starting_y = starting_index / size.0;
-        let starting_coord = (starting_x, starting_y);
-        let previous_coords = (starting_coord, starting_coord);
-        let current_coords = (starting_coord, starting_coord);
-        let mut new_map = Map {
-            step: 1,
-            // original_string,
-            data: original_string.as_bytes(),
-            size,
-            starting_coord,
-            previous_coords,
-            current_coords,
-        };
-        new_map.first_step();
-        new_map
+    let first = starting_directions.get(0).unwrap();
+    let second = starting_directions.get(1).unwrap();
+    let mut walker1 = Walker::new(&map, step(starting_coord, first), first.clone());
+    let mut walker2 = Walker::new(&map, step(starting_coord, second), second.clone());
+    let mut result = 1;
+    while walker1.get_coord() != walker2.get_coord() {
+        walker1.walk();
+        walker2.walk();
+        result += 1;
     }
 
-    fn get_tile(&self, x: i64, y: i64) -> Option<u8> {
-        if x >= self.size.0 as i64 || y >= self.size.1 as i64 || x < 0 || y < 0 {
-            None
+    println!("result = {}", result);
+}
+
+fn read_file(filename: &str) -> String {
+    fs::read_to_string(filename).unwrap()
+}
+
+#[derive(PartialEq, Clone, Debug)]
+enum Direction {
+    Left,
+    Right,
+    Up,
+    Down,
+}
+
+fn opposite_direction(direction: &Direction) -> Direction {
+    match direction {
+        Direction::Left => Direction::Right,
+        Direction::Right => Direction::Left,
+        Direction::Up => Direction::Down,
+        Direction::Down => Direction::Up,
+    }
+}
+
+fn step(coord: (i64, i64), direction: &Direction) -> (i64, i64) {
+    match direction {
+        Direction::Left => (coord.0 - 1, coord.1),
+        Direction::Right => (coord.0 + 1, coord.1),
+        Direction::Up => (coord.0, coord.1 - 1),
+        Direction::Down => (coord.0, coord.1 + 1),
+    }
+}
+
+struct Walker<'a> {
+    x: i64,
+    y: i64,
+    direction: Direction,
+    map: &'a Map,
+}
+
+impl Walker<'_> {
+    fn new(map: &Map, coord: (i64, i64), direction: Direction) -> Walker {
+        Walker {
+            x: coord.0,
+            y: coord.1,
+            direction: direction.clone(),
+            map,
+        }
+    }
+
+    fn get_coord(&self) -> (i64, i64) {
+        (self.x, self.y)
+    }
+
+    fn walk(&mut self) {
+        let next_direction = self
+            .map
+            .get_next_direction((self.x, self.y), &opposite_direction(&self.direction))
+            .unwrap();
+
+        self.direction = next_direction;
+        match self.direction {
+            Direction::Left => {
+                self.x -= 1;
+            }
+            Direction::Right => {
+                self.x += 1;
+            }
+            Direction::Up => {
+                self.y -= 1;
+            }
+            Direction::Down => {
+                self.y += 1;
+            }
+        }
+    }
+}
+
+struct Map {
+    data: String,
+    width: usize,
+    height: usize,
+}
+
+impl Map {
+    fn new(text: &str) -> Map {
+        let width = text.lines().next().unwrap().len();
+        let height = text.lines().count();
+        Map {
+            data: text.to_string(),
+            width,
+            height,
+        }
+    }
+
+    fn get_character(&self, coord: (i64, i64)) -> char {
+        if coord.0 < 0
+            || coord.0 >= self.width as i64
+            || coord.1 < 0
+            || coord.1 >= self.height as i64
+        {
+            return '.';
+        }
+        let x = coord.0 as usize;
+        let y = coord.1 as usize;
+        self.data.as_bytes()[(self.width + 1) * y + x] as char
+    }
+
+    fn get_starting_coord(&self) -> Option<(i64, i64)> {
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let coord = (x as i64, y as i64);
+                let char = self.get_character(coord);
+                if char == 'S' {
+                    return Some(coord);
+                }
+            }
+        }
+        None
+    }
+
+    fn get_valid_directions(&self, coord: (i64, i64)) -> Vec<Direction> {
+        let left = self.get_character((coord.0 - 1, coord.1));
+        let right = self.get_character((coord.0 + 1, coord.1));
+        let up = self.get_character((coord.0, coord.1 - 1));
+        let down = self.get_character((coord.0, coord.1 + 1));
+        let connects_left = ['-', 'L', 'F'].contains(&left);
+        let connects_right = ['-', 'J', '7'].contains(&right);
+        let connects_up = ['|', '7', 'F'].contains(&up);
+        let connects_down = ['|', 'L', 'J'].contains(&down);
+
+        let mut results = vec![];
+
+        if connects_left {
+            results.push(Direction::Left)
+        }
+
+        if connects_right {
+            results.push(Direction::Right);
+        }
+
+        if connects_up {
+            results.push(Direction::Up);
+        }
+
+        if connects_down {
+            results.push(Direction::Down);
+        }
+
+        results
+    }
+
+    fn get_next_direction(&self, coord: (i64, i64), from: &Direction) -> Option<Direction> {
+        let current = self.get_character(coord);
+        let connects_left = ['-', 'J', '7'].contains(&current);
+        let connects_right = ['-', 'L', 'F'].contains(&current);
+        let connects_up = ['|', 'L', 'J'].contains(&current);
+        let connects_down = ['|', '7', 'F'].contains(&current);
+
+        if connects_left && from != &Direction::Left {
+            Some(Direction::Left)
+        } else if connects_right && from != &Direction::Right {
+            Some(Direction::Right)
+        } else if connects_up && from != &Direction::Up {
+            Some(Direction::Up)
+        } else if connects_down && from != &Direction::Down {
+            Some(Direction::Down)
         } else {
-            let index = self.size.0 * y + x;
-            let item = *self.data.get(index as usize).unwrap();
-            Some(item)
+            None
         }
-    }
-
-    fn first_step(&mut self) {
-        let x = self.starting_coord.0 as i64;
-        let y = self.starting_coord.1 as i64;
-        let left = self.get_tile(x - 1, y);
-        let right = self.get_tile(x + 1, y);
-        let up = self.get_tile(x, y - 1);
-        let down = self.get_tile(x, y + 1);
-
-        let mut dirs = vec![];
-
-        if let Some(left) = left {
-            if [b'F', b'L', b'-'].contains(&left) {
-                dirs.push((x - 1, y));
-            }
-        }
-        if let Some(right) = right {
-            if [b'J', b'7', b'-'].contains(&right) {
-                dirs.push((x + 1, y));
-            }
-        }
-        if let Some(up) = up {
-            if [b'F', b'7', b'|'].contains(&up) {
-                dirs.push((x, y - 1));
-            }
-        }
-        if let Some(down) = down {
-            if [b'J', b'L', b'|'].contains(&down) {
-                dirs.push((x, y + 1));
-            }
-        }
-
-        self.current_coords = (*dirs.get(0).unwrap(), *dirs.get(1).unwrap());
-    }
-
-    fn step(&mut self) {
-        let saved_current = self.current_coords.clone();
-
-        let x_0 = self.current_coords.0 .0;
-        let y_0 = self.current_coords.0 .1;
-        let left_coord_0 = (x_0 - 1, y_0);
-        let right_coord_0 = (x_0 + 1, y_0);
-        let up_coord_0 = (x_0, y_0 - 1);
-        let down_coord_0 = (x_0, y_0 + 1);
-        let left_0 = self.get_tile(left_coord_0.0, left_coord_0.1);
-        let right_0 = self.get_tile(right_coord_0.0, right_coord_0.1);
-        let up_0 = self.get_tile(up_coord_0.0, up_coord_0.1);
-        let down_0 = self.get_tile(down_coord_0.0, down_coord_0.1);
-
-        let mut new_coord_0 = (0, 0);
-
-        if let Some(left) = left_0 {
-            if [b'F', b'L', b'-'].contains(&left) && self.previous_coords.0 != left_coord_0 {
-                new_coord_0 = left_coord_0;
-            }
-        }
-        if let Some(right) = right_0 {
-            if [b'J', b'7', b'-'].contains(&right) && self.previous_coords.0 != right_coord_0 {
-                new_coord_0 = right_coord_0;
-            }
-        }
-        if let Some(up) = up_0 {
-            if [b'F', b'7', b'|'].contains(&up) && self.previous_coords.0 != up_coord_0 {
-                new_coord_0 = up_coord_0;
-            }
-        }
-        if let Some(down) = down_0 {
-            if [b'J', b'L', b'|'].contains(&down) && self.previous_coords.0 != down_coord_0 {
-                new_coord_0 = down_coord_0;
-            }
-        }
-
-        self.current_coords.0 = new_coord_0;
-
-        let x_1 = self.current_coords.1 .0;
-        let y_1 = self.current_coords.1 .1;
-        let left_coord_1 = (x_1.saturating_sub(1), y_1);
-        let right_coord_1 = (x_1 + 1, y_1);
-        let up_coord_1 = (x_1, y_1.saturating_sub(1));
-        let down_coord_1 = (x_1, y_1 + 1);
-        let left_1 = self.get_tile(left_coord_1.0, left_coord_1.1);
-        let right_1 = self.get_tile(right_coord_1.0, right_coord_1.1);
-        let up_1 = self.get_tile(up_coord_1.0, up_coord_1.1);
-        let down_1 = self.get_tile(down_coord_1.0, down_coord_1.1);
-
-        let mut new_coord_1 = (0, 0);
-        let current_character = self
-            .get_tile(self.current_coords.0 .0, self.current_coords.0 .1)
-            .unwrap() as char;
-
-        if let Some(left) = left_1 {
-            // println!("left = {}", left);
-            if [b'F', b'L', b'-'].contains(&left)
-                && self.previous_coords.1 != left_coord_1
-                && ['|'].contains(&current_character) == false
-            {
-                new_coord_1 = left_coord_1;
-            }
-        }
-        if let Some(right) = right_1 {
-            // println!("right = {}", right);
-            if [b'J', b'7', b'-'].contains(&right)
-                && self.previous_coords.1 != right_coord_1
-                && ['|'].contains(&current_character) == false
-            {
-                new_coord_1 = right_coord_1;
-            }
-        }
-        if let Some(up) = up_1 {
-            // println!("up = {}", up as char);
-            if [b'F', b'7', b'|'].contains(&up)
-                && self.previous_coords.1 != up_coord_1
-                && ['-'].contains(&current_character) == false
-            {
-                new_coord_1 = up_coord_1;
-            }
-        }
-        if let Some(down) = down_1 {
-            // println!("down = {}", down as char);
-            if [b'J', b'L', b'|'].contains(&down)
-                && self.previous_coords.1 != down_coord_1
-                && ['-'].contains(&current_character) == false
-            {
-                new_coord_1 = down_coord_1;
-            }
-        }
-
-        /*
-        println!(
-            "curr = {:?}",
-            self.get_tile(self.current_coords.1 .0, self.current_coords.1 .1)
-                .unwrap() as char
-        );
-        */
-
-        self.current_coords.1 = new_coord_1;
-
-        self.previous_coords = saved_current;
-        self.step += 1;
-    }
-
-    fn step_to_end(&mut self) -> i64 {
-        println!("{:?}", self.current_coords);
-        while self.current_coords.0 != self.current_coords.1 {
-            self.step();
-            println!("{:?}", self.current_coords);
-        }
-        self.step
     }
 }
 
 #[test]
 fn test1() {
-    let data = ".....
-.S-7.
-.|.|.
-.L-J.
-....."
-        .replace("\n", "");
+    let input = "-L|F7
+7S-7|
+L|7||
+-L-J|
+L|-JF";
 
-    let mut map = Map::new(&data, (5, 5));
-    let steps = map.step_to_end();
-    println!("steps = {}", steps);
-    assert!(steps == 4);
+    let map = Map::new(input);
+
+    let starting_coord = map.get_starting_coord().unwrap();
+    let starting_directions = map.get_valid_directions(starting_coord);
+
+    let first = starting_directions.get(0).unwrap();
+    let second = starting_directions.get(1).unwrap();
+    let mut walker1 = Walker::new(&map, step(starting_coord, first), first.clone());
+    let mut walker2 = Walker::new(&map, step(starting_coord, second), second.clone());
+    let mut result = 1;
+    while walker1.get_coord() != walker2.get_coord() {
+        print!("w1 = {:?} -> ", walker1.get_coord(),);
+        walker1.walk();
+        println!("w1 = {:?}", walker1.get_coord(),);
+        print!("w2 = {:?} -> ", walker2.get_coord(),);
+        walker2.walk();
+        println!("w2 = {:?}", walker2.get_coord(),);
+        result += 1;
+    }
+
+    println!("result = {}", result);
+    assert!(result == 4);
 }
 
 #[test]
 fn test2() {
-    let data = "..F7.
+    let input = "..F7.
 .FJ|.
 SJ.L7
 |F--J
-LJ..."
-        .replace("\n", "");
+LJ...";
 
-    let mut map = Map::new(&data, (5, 5));
-    let steps = map.step_to_end();
-    println!("steps = {}", steps);
-    assert!(steps == 8);
+    let map = Map::new(input);
+
+    let starting_coord = map.get_starting_coord().unwrap();
+    let starting_directions = map.get_valid_directions(starting_coord);
+
+    let first = starting_directions.get(0).unwrap();
+    let second = starting_directions.get(1).unwrap();
+    let mut walker1 = Walker::new(&map, step(starting_coord, first), first.clone());
+    let mut walker2 = Walker::new(&map, step(starting_coord, second), second.clone());
+    let mut result = 1;
+    while walker1.get_coord() != walker2.get_coord() {
+        print!("w1 = {:?} -> ", walker1.get_coord(),);
+        walker1.walk();
+        println!("w1 = {:?}", walker1.get_coord(),);
+        print!("w2 = {:?} -> ", walker2.get_coord(),);
+        walker2.walk();
+        println!("w2 = {:?}", walker2.get_coord(),);
+        result += 1;
+    }
+
+    println!("result = {}", result);
+    assert!(result == 8);
 }
